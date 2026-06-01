@@ -1,0 +1,42 @@
+SimTorch/
+├──core/
+│  ├──loss.py               # losses functions to eval an nn
+│  ├──nn.py                 # all neural network class 
+│  ├──optim.py              # optimizer class to update nn
+│  ├──rng.py                # random number generator used all across the code to set a seed
+│  └──scheduler.py          # schedulers to change classes/optimizers parameters like learning rate
+│
+├──doc/ 
+│  └──notes_techniques/
+│     ├──explications_update_actor.md
+│     ├──Feuille de calcule pour Soft Actor Critic.pdf
+│     ├──hyperparametres_rl_pour_ui.md
+│     └──Preuve_math_pour_update_actor.md
+│
+├──rl/
+│  ├──base_nn_optimiser.py  # Contains the base class for all optim methods
+│  ├──openaies.py           # The openai es optimisation method
+│  ├──policy.py             # NN classes for 
+│  ├──ppoptimiser.py        # The ppo optimisation method
+│  ├──sac_optimiser.py      # The soft actor critic optimisation method
+│  └──utils.py              # Utilities functions for RL
+│
+├──rl_worker/
+│  ├──rl_worker.py          # Classes to help to start a training and save checkpoints
+│  └──test_worker.py        # Just a test for the worker
+│
+├──save/                    # All the script to save the optimisation methods while training
+│  ├──checkpoint.py
+│  ├──network_file.py
+│  ├──network_parser.py
+│  ├──parsing_functions.py
+│  ├──resume_training.py
+│  ├──save_nn.py
+│  └──utils.py
+│
+├──training_scripts/
+│  ├──training_ppo.py       # The training script for the drones
+│  └──training_school.py    # The training script for the drone for the school computers
+│
+└──file_structure.txt       # you're here
+
