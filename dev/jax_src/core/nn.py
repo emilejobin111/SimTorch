@@ -67,6 +67,33 @@ class ReLU(ActivationFunction):
         return jax.nn.relu(input)
 jax.tree_util.register_pytree_node(ReLU,ReLU._tree_flatten,ReLU._tree_unflatten)
 
+class PReLU(ActivationFunction):
+    def __init__(self, alpha: jnp.ndarray):
+        """Initialize a new ELU instance.
+        
+        Args:
+            alpha (float): Scaling or learning-rate coefficient used by the routine.
+        """
+        self._alpha = alpha
+    @classmethod
+    def new(cls,init_alpha:float=-0.01):
+        alpha = jnp.array(init_alpha)
+        return cls(alpha=alpha)
+    def get_gain(self):
+        return (2/(1+self._alpha**2))**0.5
+    @override
+    def forward(self, input):
+        return jax.nn.leaky_relu(input, -self._alpha)
+    @override
+    def params(self):
+        yield self._alpha
+    @property
+    def alpha(self):
+        return self._alpha
+    def __repr__(self):
+        return f"PReLU(alpha={self._alpha})"
+    def _tree_flatten(self):
+        return ((self.alpha), {})
 
 class ELU(ActivationFunction):
     def __init__(self, alpha: float = 1.0):
