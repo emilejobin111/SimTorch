@@ -93,7 +93,8 @@ class PReLU(ActivationFunction):
     def __repr__(self):
         return f"PReLU(alpha={self._alpha})"
     def _tree_flatten(self):
-        return ((self.alpha), {})
+        return ((self.alpha,), {})
+jax.tree_util.register_pytree_node(PReLU,PReLU._tree_flatten,PReLU._tree_unflatten)
 
 class ELU(ActivationFunction):
     def __init__(self, alpha: float = 1.0):
@@ -180,7 +181,7 @@ class Sequential(JaxModule):
             string += f"    {repr(module)},\n"
         string += "])"
         return string
-    def init_radom_params(self, key:jnp.ndarray, default_gain:float=0.0):
+    def init_radom_params(self, key:jnp.ndarray, default_gain:float=1.0):
         current_gain = default_gain
         for module in reversed(self._modules):
             if isinstance(module, ActivationFunction):
@@ -222,17 +223,17 @@ if __name__ == "__main__":
     mod = Sigmoid()
     print(mod.forward(x))
     
-    mods = (Tanh(),Linear.new(4,4),ReLU(),ELU())
+    mods = (Tanh(),Linear.new(4,4),PReLU.new(),ELU(),ELU())
     network = Sequential(*mods)
+    key = jax.random.key(13)
+    network.init_radom_params(key)
+    [print(x) for x in network.params()]
+    
     print(network)
     loss, grad_network = mse(network,x,y)
     grad_network:JaxModule
     print(loss)
     [print(x) for x in grad_network.params()]
-    [print(x) for x in network.params()]
-    
-    import torch.nn as nn
-    nn.ReLU().parameters()
     
     
     
