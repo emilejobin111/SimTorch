@@ -36,7 +36,6 @@ class Sigmoid(ActivationFunction):
         return "Sigmoid()"
     
     @override
-    @jax.jit
     def forward(self, input: jnp.ndarray) -> jnp.ndarray:
         return jax.nn.sigmoid(input)
 jax.tree_util.register_pytree_node(Sigmoid,Sigmoid._tree_flatten,Sigmoid._tree_unflatten)
@@ -47,7 +46,6 @@ class Tanh(ActivationFunction):
         return "Tanh()"
     
     @override
-    @jax.jit
     def forward(self, input: jnp.ndarray) -> jnp.ndarray:
         return jax.nn.tanh(input)
 jax.tree_util.register_pytree_node(Tanh,Tanh._tree_flatten,Tanh._tree_unflatten)
@@ -58,7 +56,6 @@ class ReLU(ActivationFunction):
         return "ReLU()"
     
     @override
-    @jax.jit
     def forward(self, input: jnp.ndarray) -> jnp.ndarray:
         return jax.nn.relu(input)
 jax.tree_util.register_pytree_node(ReLU,ReLU._tree_flatten,ReLU._tree_unflatten)
@@ -67,7 +64,8 @@ jax.tree_util.register_pytree_node(ReLU,ReLU._tree_flatten,ReLU._tree_unflatten)
 class ELU(ActivationFunction):
     def __init__(self, alpha: float = 1.0):
         self._alpha = alpha
-    @jax.jit
+    
+    @override
     def forward(self, input):
         return jax.nn.elu(input, self._alpha)
     @property
@@ -88,7 +86,8 @@ class LeakyReLU(ActivationFunction):
             alpha (float): Scaling or learning-rate coefficient used by the routine.
         """
         self._alpha = alpha
-    @jax.jit
+    
+    @override
     def forward(self, input):
         return jax.nn.leaky_relu(input, -self._alpha)
     @property
@@ -108,8 +107,8 @@ class Linear(JaxModule):
         self._use_bias = use_bias
     @classmethod
     def new(cls, input_count: int, output_count: int, use_bias:bool=True):
-        W = jnp.zeros((input_count, output_count))
-        b = jnp.zeros((output_count))
+        W = jnp.zeros((input_count, output_count),dtype=jnp.float32)
+        b = jnp.zeros((output_count),dtype=jnp.float32)
         return cls(W,b,use_bias)
     def __repr__(self):
         return f"Linear(input_count={self._W.shape[0]},output_count={self._W.shape[1]})"
@@ -117,6 +116,7 @@ class Linear(JaxModule):
     def params(self):
         yield self._W
         yield self._b
+    @override
     def forward(self, input):
         return input @ self._W + (self._b if self._use_bias else 0)
     
@@ -140,7 +140,7 @@ class Sequential(JaxModule):
     def params(self):
         for module in self._modules:
             yield from module.params()
-    @jax.jit
+    # @jax.jit
     def forward(self, input):
         for module in self._modules:
             input = module.forward(input)
