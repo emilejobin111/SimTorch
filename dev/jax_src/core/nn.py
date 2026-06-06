@@ -180,6 +180,19 @@ class Sequential(JaxModule):
             string += f"    {repr(module)},\n"
         string += "])"
         return string
+    def init_radom_params(self, key:jnp.ndarray, default_gain:float=0.0):
+        current_gain = default_gain
+        for module in reversed(self._modules):
+            if isinstance(module, ActivationFunction):
+                current_gain = module.get_gain()
+            
+            elif isinstance(module, Linear):
+                std = current_gain * (1/module.output_count)**2
+                key, subkey = jax.random.split(key=key)
+                module._W = jax.random.normal(key=subkey, shape=module._W.shape) * std
+            
+            else:
+                raise NotImplementedError(f"parameter initialisation is not implemeted for module : {type(module)}")
     
     def params(self):
         for module in self._modules:
