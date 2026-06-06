@@ -105,6 +105,12 @@ class Linear(JaxModule):
         self._W = W
         self._b = b
         self._use_bias = use_bias
+    @property
+    def input_count(self):
+        return self._W.shape[0]
+    @property
+    def output_count(self):
+        return self._W.shape[1]
     @classmethod
     def new(cls, input_count: int, output_count: int, use_bias:bool=True):
         W = jnp.zeros((input_count, output_count),dtype=jnp.float32)
