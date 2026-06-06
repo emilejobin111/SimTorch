@@ -38,16 +38,31 @@ class AdamW:
         
         
     def step(self, net:JaxModule, grad_net:JaxModule)->tuple[JaxModule,AdamW]:
-        updates_tree = jax.tree.map(self.adamw_func,net,grad_net,self.__m,self.__v)
+        # 1. Flatten all inputs into flat lists of leaves
+        leaves_net, treedef = jax.tree_util.tree_flatten(net)
+        leaves_grad, _ = jax.tree_util.tree_flatten(grad_net)
+        leaves_m, _ = jax.tree_util.tree_flatten(self.__m)
+        leaves_v, _ = jax.tree_util.tree_flatten(self.__v)
         
-        new_net = jax.tree.map(lambda x: x[0], updates_tree)
-        m = jax.tree.map(lambda x: x[1], updates_tree)
-        v = jax.tree.map(lambda x: x[2], updates_tree)
+        # 2. Iterate and apply adamw_func to each leaf
+        new_leaves_net, new_leaves_m, new_leaves_v = [], [], []
+        for p, g, m, v in zip(leaves_net, leaves_grad, leaves_m, leaves_v):
+            new_p, new_m, new_v = self.adamw_func(p, g, m, v)
+            new_leaves_net.append(new_p)
+            new_leaves_m.append(new_m)
+            new_leaves_v.append(new_v)
+            
+        # 3. Unflatten the flat lists back into PyTrees
+        new_net = jax.tree_util.tree_unflatten(treedef, new_leaves_net)
+        new_m = jax.tree_util.tree_unflatten(treedef, new_leaves_m)
+        new_v = jax.tree_util.tree_unflatten(treedef, new_leaves_v)
+        
         t = self.__t + 1
         
-        child = (m,v,t)
+        # 4. Reconstruct the optimizer PyTree
+        child = (new_m, new_v, t)
         aux_data = self._tree_flatten()[1]
-        new_optim = AdamW._tree_unflatten(aux_data=aux_data,children=child)
+        new_optim = AdamW._tree_unflatten(aux_data=aux_data, children=child)
         
         return new_net, new_optim
 
