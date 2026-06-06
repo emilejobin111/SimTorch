@@ -447,7 +447,7 @@ class ELU(ActivationFunction):
             >>> obj = ELU(...)
             >>> result = obj.init_weight_function(module=...)
         """
-        std = (0.5 / module._input_count) ** 0.5
+        std = (1 / module._input_count) ** 0.5
         module._W = rng.normal(0, std, size=module._W.size)
 
 class Tanh(ActivationFunction):
