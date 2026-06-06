@@ -22,8 +22,8 @@ class JaxModule(ABC):
 
 
 class ActivationFunction(JaxModule):
-    # @abstractmethod
-    def init_weight_function(self, module:JaxModule):
+    @abstractmethod
+    def get_gain(self):
         pass
     def params(self): # to overide if the activation layer has params
         yield from []
@@ -34,6 +34,8 @@ class ActivationFunction(JaxModule):
 class Sigmoid(ActivationFunction):
     def __repr__(self):
         return "Sigmoid()"
+    def get_gain(self):
+        return 1
     
     @override
     def forward(self, input: jnp.ndarray) -> jnp.ndarray:
@@ -45,6 +47,9 @@ class Tanh(ActivationFunction):
     def __repr__(self):
         return "Tanh()"
     
+    def get_gain(self):
+        return 5/3
+    
     @override
     def forward(self, input: jnp.ndarray) -> jnp.ndarray:
         return jax.nn.tanh(input)
@@ -54,6 +59,8 @@ jax.tree_util.register_pytree_node(Tanh,Tanh._tree_flatten,Tanh._tree_unflatten)
 class ReLU(ActivationFunction):
     def __repr__(self):
         return "ReLU()"
+    def get_gain(self):
+        return 2**0.5
     
     @override
     def forward(self, input: jnp.ndarray) -> jnp.ndarray:
@@ -65,6 +72,8 @@ class ELU(ActivationFunction):
     def __init__(self, alpha: float = 1.0):
         self._alpha = alpha
     
+    def get_gain(self):
+        return 1
     @override
     def forward(self, input):
         return jax.nn.elu(input, self._alpha)
@@ -87,6 +96,8 @@ class LeakyReLU(ActivationFunction):
         """
         self._alpha = alpha
     
+    def get_gain(self):
+        return (2/(1+self._alpha**2))**0.5
     @override
     def forward(self, input):
         return jax.nn.leaky_relu(input, -self._alpha)
