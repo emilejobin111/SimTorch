@@ -64,7 +64,7 @@ class AdamW:
         v_hat = new_v / (1 - self.__beta2**self.__t)
         
         new_param = param
-        if self.__weight_decay > 0.0:
+        if self.__weight_decay > 0.0 and param.ndim > 1:
             new_param = new_param - (self.__alpha * self.__weight_decay * param)
         
         update = self.__alpha * (m_hat / (jnp.sqrt(v_hat) + self.__epsilon))
