@@ -4,7 +4,7 @@ import jax.numpy as jnp
 from abc import ABC, abstractmethod
 from typing import override, Iterator
 import time
-
+from jax.tree_util import register_pytree_node
 
 class JaxModule(ABC):
     @abstractmethod
@@ -40,7 +40,7 @@ class Sigmoid(ActivationFunction):
     @override
     def forward(self, input: jnp.ndarray) -> jnp.ndarray:
         return jax.nn.sigmoid(input)
-jax.tree_util.register_pytree_node(Sigmoid,Sigmoid._tree_flatten,Sigmoid._tree_unflatten)
+register_pytree_node(Sigmoid,Sigmoid._tree_flatten,Sigmoid._tree_unflatten)
 
 
 class Tanh(ActivationFunction):
@@ -53,7 +53,7 @@ class Tanh(ActivationFunction):
     @override
     def forward(self, input: jnp.ndarray) -> jnp.ndarray:
         return jax.nn.tanh(input)
-jax.tree_util.register_pytree_node(Tanh,Tanh._tree_flatten,Tanh._tree_unflatten)
+register_pytree_node(Tanh,Tanh._tree_flatten,Tanh._tree_unflatten)
 
 
 class ReLU(ActivationFunction):
@@ -65,7 +65,7 @@ class ReLU(ActivationFunction):
     @override
     def forward(self, input: jnp.ndarray) -> jnp.ndarray:
         return jax.nn.relu(input)
-jax.tree_util.register_pytree_node(ReLU,ReLU._tree_flatten,ReLU._tree_unflatten)
+register_pytree_node(ReLU,ReLU._tree_flatten,ReLU._tree_unflatten)
 
 class PReLU(ActivationFunction):
     def __init__(self, alpha: jnp.ndarray):
@@ -94,7 +94,7 @@ class PReLU(ActivationFunction):
         return f"PReLU(alpha={self._alpha})"
     def _tree_flatten(self):
         return ((self.alpha,), {})
-jax.tree_util.register_pytree_node(PReLU,PReLU._tree_flatten,PReLU._tree_unflatten)
+register_pytree_node(PReLU,PReLU._tree_flatten,PReLU._tree_unflatten)
 
 class ELU(ActivationFunction):
     def __init__(self, alpha: float = 1.0):
@@ -112,7 +112,7 @@ class ELU(ActivationFunction):
         return f"ELU(alpha={self._alpha})"
     def _tree_flatten(self):
         return ((), {"alpha":self._alpha})
-jax.tree_util.register_pytree_node(ELU,ELU._tree_flatten,ELU._tree_unflatten)
+register_pytree_node(ELU,ELU._tree_flatten,ELU._tree_unflatten)
 
 
 class LeakyReLU(ActivationFunction):
@@ -136,7 +136,7 @@ class LeakyReLU(ActivationFunction):
         return f"LeakyReLU(alpha={self._alpha})"
     def _tree_flatten(self):
         return ((), {"alpha":self._alpha})
-jax.tree_util.register_pytree_node(LeakyReLU,LeakyReLU._tree_flatten,LeakyReLU._tree_unflatten)
+register_pytree_node(LeakyReLU,LeakyReLU._tree_flatten,LeakyReLU._tree_unflatten)
 
 
 class Linear(JaxModule):
@@ -169,7 +169,7 @@ class Linear(JaxModule):
         child = (self._W, self._b)
         aux_data = {"use_bias":self._use_bias}
         return (child, aux_data)
-jax.tree_util.register_pytree_node(Linear,Linear._tree_flatten,Linear._tree_unflatten)
+register_pytree_node(Linear,Linear._tree_flatten,Linear._tree_unflatten)
     
 class Sequential(JaxModule):
     def __init__(self, *modules:JaxModule):
@@ -205,7 +205,7 @@ class Sequential(JaxModule):
         return input
     def _tree_flatten(self):
         return (self._modules,{})
-jax.tree_util.register_pytree_node(Sequential,Sequential._tree_flatten,Sequential._tree_unflatten)
+register_pytree_node(Sequential,Sequential._tree_flatten,Sequential._tree_unflatten)
 
 @jax.value_and_grad
 def mse(module:JaxModule, x:jnp.ndarray, y:jnp.ndarray):
