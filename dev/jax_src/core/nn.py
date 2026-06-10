@@ -188,7 +188,7 @@ class Sequential(JaxModule):
                 current_gain = module.get_gain()
             
             elif isinstance(module, Linear):
-                std = current_gain * (1/module.output_count)**2
+                std = current_gain * (1/(module.input_count+module.output_count))**0.5
                 key, subkey = jax.random.split(key=key)
                 module._W = jax.random.normal(key=subkey, shape=module._W.shape) * std
             
