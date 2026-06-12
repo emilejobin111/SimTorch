@@ -11,10 +11,10 @@ from ..core import nn
 
 
 
+
+
 LOG_STD_MIN = -20.0
 LOG_STD_MAX = 2.0
-
-
         
 
 class ActorNN(nn.Sequential):
@@ -206,20 +206,23 @@ def make_actor_critic_tuple(obs_dim: int,
                             hidden_layers_count: int = 2,
                             hidden_dims: int = 256,
                             activation_func: Optional[nn.ActivationFunction]=None,
-                            standalone_std: bool = True
-                            )->Tuple[ActorNN, CriticNN]:
+                            standalone_std: bool = True,
+                            key: Optional[jnp.ndarray] = None)->Tuple[ActorNN, CriticNN]:
     
     """Construct and return actor critic tuple.
     
     Returns:
         Tuple[ActorNN, CriticNN]: Newly constructed objects matching the requested
-                                  configuration.
+                                  configuration. With random params if `key` is given
     
-    Example:
-        >>> result = make_actor_critic_tuple(obs_dim=4, act_dim=4, hidden_layers_count=4, ...)
     """
     actor = ActorNN.build_actor(obs_dim, act_dim, hidden_layers_count, hidden_dims, activation_func, standalone_std)
     critic = CriticNN.build_critic(obs_dim, hidden_layers_count, hidden_dims, activation_func)
+    if key is not None:
+        key, key_ = jax.random.split(key)
+        actor.init_radom_params(key)
+        actor.init_radom_params(key_)
+        
     return actor, critic
 
 def make_actor_and_q_tuple(obs_dim: int,
@@ -246,9 +249,27 @@ def make_actor_and_q_tuple(obs_dim: int,
     Qs:list[QNN] = []
     for i in range(Q_amount):
         Qs.append(QNN.build_Q(obs_dim, act_dim, hidden_layers_count, hidden_dims, activation_func))
-        #TODO use a key
         if key is not None:
             key, key_ = jax.random.split(key)
             Qs[i].init_radom_params(key=key_)
     
     return actor, tuple(Qs)
+
+
+if __name__ == "__main__":
+    modules = [
+        nn.Linear.new(5,32),
+        nn.ELU(),
+        nn.Linear.new(32,32),
+        nn.ELU(),
+        nn.Linear.new(32,2),
+        nn.ELU(),
+        ]
+
+    pi = ActorNN.new(*modules,standalone_std=True)
+    array = jnp.array([1,2,3,4,5])
+    key = jax.random.key(1)
+    pi.init_radom_params(key=key)
+
+    print(jax.jit(pi.forward)(array))
+    print(pi)
