@@ -156,7 +156,8 @@ class StdLayer(JaxModule):
         log_std_array = jnp.full((action_len), jnp.log(init_std),dtype=jnp.float32)
         return cls(log_std_array=log_std_array)
     def __repr__(self):
-        return "StdLayer()"
+        mean_std = jnp.mean(jnp.exp(self._log_std_array))
+        return f"StdLayer(mean_std={mean_std})"
     def params(self):
         yield self._log_std_array
     def forward(self, input):
