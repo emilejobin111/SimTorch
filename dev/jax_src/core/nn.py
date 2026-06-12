@@ -138,6 +138,26 @@ class LeakyReLU(ActivationFunction):
         return ((), {"alpha":self._alpha})
 register_pytree_node(LeakyReLU,LeakyReLU._tree_flatten,LeakyReLU._tree_unflatten)
 
+class StdLayer(JaxModule):
+    def __init__(self, log_std_array: jnp.ndarray):
+        self._log_std_array = log_std_array
+    @classmethod
+    def new(cls, action_len:int, init_std:float=1.0):
+        log_std_array = jnp.full((action_len), jnp.log(init_std),dtype=jnp.float32)
+        return cls(log_std_array=log_std_array)
+    def __repr__(self):
+        return "StdLayer()"
+    def params(self):
+        yield self._log_std_array
+    def forward(self, input):
+        std = jnp.exp(self._log_std_array)
+        return input, std
+    def _tree_flatten(self):
+        child = (self._log_std_array)
+        aux_data = {}
+        return (child, aux_data)
+register_pytree_node(StdLayer, StdLayer._tree_flatten, StdLayer._tree_unflatten)
+
 
 class Linear(JaxModule):
     def __init__(self, W:jnp.ndarray, b:jnp.ndarray, use_bias:bool):
