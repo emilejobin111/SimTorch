@@ -221,6 +221,8 @@ class Sequential(JaxModule):
                 std = current_gain * (1/(module.input_count+module.output_count))**0.5
                 key, subkey = jax.random.split(key=key)
                 module._W = jax.random.normal(key=subkey, shape=module._W.shape) * std
+            elif isinstance(module, StdLayer):
+                pass
             
             else:
                 raise NotImplementedError(f"parameter initialisation is not implemeted for module : {type(module)}")
@@ -228,6 +230,21 @@ class Sequential(JaxModule):
     def params(self):
         for module in self._modules:
             yield from module.params()
+    @staticmethod
+    def get_output_count(modules):
+        for module in reversed(modules):
+            module: JaxModule
+            if hasattr(module, "output_count"):
+                return module.output_count
+        else : return None
+    @staticmethod
+    def get_input_count(modules):
+        for module in modules:
+            module: JaxModule
+            if hasattr(module, "input_count"):
+                return module.input_count
+        else : return None
+    
     # @jax.jit
     def forward(self, input):
         for module in self._modules:
