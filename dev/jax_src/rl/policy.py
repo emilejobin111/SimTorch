@@ -26,8 +26,10 @@ class ActorNN(nn.Sequential):
     def new(cls, *modules:nn.JaxModule, standalone_std:bool):
         modules:list[nn.JaxModule] = list(modules)
         if standalone_std:
-            std_layer = nn.StdLayer.new(nn.Sequential.get_output_count(modules=modules),)
-            modules.append(std_layer)
+            if not isinstance(modules[-1], nn.StdLayer):
+                std_layer = nn.StdLayer.new(nn.Sequential.get_output_count(modules=modules),)
+                modules.append(std_layer)
+                
         else:
             for i in reversed(range(len(modules))):
                 if isinstance(modules[i], nn.ActivationFunction):
@@ -38,6 +40,8 @@ class ActorNN(nn.Sequential):
                     del old_mod
                     
                     break
+                elif isinstance(modules[i], nn.StdLayer):
+                    raise nn.InitializationException("A ActorNN without standalone_std shouldn't posess an StdLayer in it's modules")
                 else:
                     raise NotImplementedError(f"The module type {type(modules[i])} is not supported for adding a std output")
             raise nn.InitializationException("No module found in the actor network to add the std output to")
