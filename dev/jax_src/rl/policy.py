@@ -99,7 +99,16 @@ class CriticNN(nn.Sequential):
         obj = cls(*modules)
         obj.__last_output_compatibility_check()
         return obj
-
 register_pytree_node(CriticNN, CriticNN._tree_flatten, CriticNN._tree_unflatten)
+
+
+class QNN(CriticNN):
+    def list_forward(self, obs_act:list[jnp.ndarray,jnp.ndarray])->jnp.ndarray:
+        """Performs the forward pass for the Q-function approximator with a list or a tuple as input.
+        by convention, the order should be [observation, action].
+        """
+        input = jnp.concatenate(obs_act)
+        return self.forward(input=input)
+register_pytree_node(QNN, QNN._tree_flatten, QNN._tree_unflatten)
 
 
