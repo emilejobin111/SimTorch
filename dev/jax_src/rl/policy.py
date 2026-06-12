@@ -59,6 +59,15 @@ class ActorNN(nn.Sequential):
             log_std = act_log_std[output_c:output_c*2]
             std = jnp.exp(log_std)
             return act, std
+        
+    def deterministic_forward(self, input: jnp.ndarray) -> jnp.ndarray:
+        act, _ = self.forward(input=input)
+        return act
+    
+    def stochastic_forward(self, input: jnp.ndarray, key: jnp.ndarray) -> jnp.ndarray:
+        mu, std = self.forward(input=input)
+        act = mu + jax.random.normal(key=key,shape=mu.shape) * std
+        return act
     
     def __repr__(self):
         return "ActorNN(\n" + super().__repr__() + ")"
