@@ -74,12 +74,42 @@ class ActorNN(nn.Sequential):
     
     def init_radom_params(self, key, default_gain = 1):
         return super().init_radom_params(key, default_gain)
+    
+    @classmethod
+    def build_actor(cls,
+                    obs_dim: int,
+                    act_dim: int,
+                    hidden_layers_count: int = 2,
+                    hidden_dims: int = 256,
+                    activation_func: Optional[nn.ActivationFunction]=None,
+                    standalone_std: bool = True)->ActorNN:
+        if activation_func is None:
+            activation_func = nn.ReLU()
+        
+        modules = []
+        
+        if hidden_layers_count == 0:
+            modules.append(nn.Linear.new(obs_dim,act_dim))
+            modules.append(deepcopy(activation_func))
+            return cls(modules, standalone_std)
+        
+        modules.append(nn.Linear.new(obs_dim,hidden_dims))
+        modules.append(deepcopy(activation_func))
+        
+        for _ in range(hidden_layers_count - 1):
+            modules.append(nn.Linear.new(hidden_dims,hidden_dims))
+            modules.append(deepcopy(activation_func))
+        
+        modules.append(nn.Linear.new(hidden_dims,act_dim))
+        
+        return cls.new(*modules,standalone_std=standalone_std)
 
     def _tree_flatten(self):
         child = (self._modules)
         aux_data = {"standalone_std":self._standalone_std}
         return (child, aux_data)
 register_pytree_node(ActorNN, ActorNN._tree_flatten, ActorNN._tree_unflatten)
+    
 
 
 
@@ -94,11 +124,41 @@ class CriticNN(nn.Sequential):
             return
         else:
             raise nn.InitializationException("A Critic nn must have at least one output")
+        
     @classmethod
     def new(cls, *modules:nn.JaxModule):
         obj = cls(*modules)
         obj.__last_output_compatibility_check()
         return obj
+    
+    @classmethod
+    def build_critic(cls:CriticNN,
+                     obs_dim: int,
+                     hidden_layers_count: int = 2,
+                     hidden_dims: int = 256,
+                     activation_func: Optional[nn.ActivationFunction]=None)->CriticNN:
+        
+        """Build and return a critic instance."""
+        if activation_func is None:
+            activation_func = nn.ReLU()
+        modules = []
+        
+        if hidden_layers_count == 0:
+            modules.append(nn.Linear.new(obs_dim,1))
+            modules.append(deepcopy(activation_func))
+            return cls(modules)
+        
+        modules.append(nn.Linear.new(obs_dim,hidden_dims))
+        modules.append(deepcopy(activation_func))
+        
+        for _ in range(hidden_layers_count - 1):
+            modules.append(nn.Linear.new(hidden_dims,hidden_dims))
+            modules.append(deepcopy(activation_func))
+        
+        modules.append(nn.Linear.new(hidden_dims,1))
+        
+        return cls.new(modules)
+    
 register_pytree_node(CriticNN, CriticNN._tree_flatten, CriticNN._tree_unflatten)
 
 
@@ -109,6 +169,35 @@ class QNN(CriticNN):
         """
         input = jnp.concatenate(obs_act)
         return self.forward(input=input)
+    
+    @classmethod
+    def build_Q(cls:CriticNN,
+                obs_dim: int,
+                act_dim: int,
+                hidden_layers_count: int = 2,
+                hidden_dims: int = 256,
+                activation_func: Optional[nn.ActivationFunction]=None)->CriticNN:
+        
+        """Build and return a critic instance."""
+        if activation_func is None:
+            activation_func = nn.ReLU()
+        modules = []
+        
+        if hidden_layers_count == 0:
+            modules.append(nn.Linear.new(obs_dim+act_dim,1))
+            modules.append(deepcopy(activation_func))
+            return cls(modules)
+        
+        modules.append(nn.Linear.new(obs_dim+act_dim,hidden_dims))
+        modules.append(deepcopy(activation_func))
+        
+        for _ in range(hidden_layers_count - 1):
+            modules.append(nn.Linear.new(hidden_dims,hidden_dims))
+            modules.append(deepcopy(activation_func))
+        
+        modules.append(nn.Linear.new(hidden_dims,1))
+        
+        return cls.new(modules)
 register_pytree_node(QNN, QNN._tree_flatten, QNN._tree_unflatten)
 
 
