@@ -2,10 +2,14 @@ from __future__ import annotations
 import jax
 import jax.numpy as jnp
 from abc import ABC, abstractmethod
-from typing import override, Iterator
+from typing import override, Iterator, NamedTuple
 import time
 from .nn import JaxModule
 
+class AdamWUpdate(NamedTuple):
+    param:jnp.ndarray
+    m:jnp.ndarray
+    v:jnp.ndarray
 
 class AdamW:
     """AdamW (Adam with Weight Decay) optimizer."""
@@ -38,32 +42,18 @@ class AdamW:
         
         
     def step(self, net:JaxModule, grad_net:JaxModule)->tuple[JaxModule,AdamW]:
-        # 1. Flatten all inputs into flat lists of leaves
-        leaves_net, treedef = jax.tree_util.tree_flatten(net)
-        leaves_grad, _ = jax.tree_util.tree_flatten(grad_net)
-        leaves_m, _ = jax.tree_util.tree_flatten(self.__m)
-        leaves_v, _ = jax.tree_util.tree_flatten(self.__v)
         
-        # 2. Iterate and apply adamw_func to each leaf
-        new_leaves_net, new_leaves_m, new_leaves_v = [], [], []
-        for p, g, m, v in zip(leaves_net, leaves_grad, leaves_m, leaves_v):
-            new_p, new_m, new_v = self.adamw_func(p, g, m, v)
-            new_leaves_net.append(new_p)
-            new_leaves_m.append(new_m)
-            new_leaves_v.append(new_v)
-            
-        # 3. Unflatten the flat lists back into PyTrees
-        new_net = jax.tree_util.tree_unflatten(treedef, new_leaves_net)
-        new_m = jax.tree_util.tree_unflatten(treedef, new_leaves_m)
-        new_v = jax.tree_util.tree_unflatten(treedef, new_leaves_v)
         
-        t = self.__t + 1
+        update_tree = jax.tree.map(self.adamw_func, net, grad_net, self.__m, self.__v)
         
-        # 4. Reconstruct the optimizer PyTree
-        child = (new_m, new_v, t)
-        aux_data = self._tree_flatten()[1]
-        new_optim = AdamW._tree_unflatten(aux_data=aux_data, children=child)
+        new_net = jax.tree.map(lambda x: x.param, update_tree, is_leaf=lambda x: isinstance(x, AdamWUpdate))
+        new_m = jax.tree.map(lambda x: x.m, update_tree, is_leaf=lambda x: isinstance(x, AdamWUpdate))
+        new_v = jax.tree.map(lambda x: x.v, update_tree, is_leaf=lambda x: isinstance(x, AdamWUpdate))
         
+        new_t = self.__t + 1
+        
+        kwargs = self._tree_flatten()[1]
+        new_optim = AdamW(m=new_m,v=new_v, t=new_t, **kwargs)
         return new_net, new_optim
 
     def adamw_func(self,param:jnp.ndarray,gradient:jnp.ndarray, m:jnp.ndarray,v:jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
@@ -87,7 +77,7 @@ class AdamW:
             new_param = new_param + update
         else:
             new_param = new_param - update
-        return new_param, new_m, new_v
+        return AdamWUpdate(new_param, new_m, new_v)
 
     
     
