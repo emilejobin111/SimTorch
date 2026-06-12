@@ -6,6 +6,16 @@ from typing import override, Iterator
 import time
 from jax.tree_util import register_pytree_node
 
+
+
+class InitializationException(Exception):
+    """Custom exception raised for initialization errors in the neural network."""
+
+    def __init__(self, *args):
+        super().__init__(*args)
+
+
+
 class JaxModule(ABC):
     @abstractmethod
     def forward(self, input: jnp.ndarray)->jnp.ndarray:
