@@ -61,7 +61,7 @@ class ActorNN(nn.Sequential):
             return act, std
     
     def __repr__(self):
-        return "ActorMM(\n" + super().__repr__() + ")"
+        return "ActorNN(\n" + super().__repr__() + ")"
     
     def init_radom_params(self, key, default_gain = 1):
         return super().init_radom_params(key, default_gain)
