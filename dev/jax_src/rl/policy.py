@@ -201,3 +201,54 @@ class QNN(CriticNN):
 register_pytree_node(QNN, QNN._tree_flatten, QNN._tree_unflatten)
 
 
+def make_actor_critic_tuple(obs_dim: int,
+                            act_dim: int,
+                            hidden_layers_count: int = 2,
+                            hidden_dims: int = 256,
+                            activation_func: Optional[nn.ActivationFunction]=None,
+                            standalone_std: bool = True
+                            )->Tuple[ActorNN, CriticNN]:
+    
+    """Construct and return actor critic tuple.
+    
+    Returns:
+        Tuple[ActorNN, CriticNN]: Newly constructed objects matching the requested
+                                  configuration.
+    
+    Example:
+        >>> result = make_actor_critic_tuple(obs_dim=4, act_dim=4, hidden_layers_count=4, ...)
+    """
+    actor = ActorNN.build_actor(obs_dim, act_dim, hidden_layers_count, hidden_dims, activation_func, standalone_std)
+    critic = CriticNN.build_critic(obs_dim, hidden_layers_count, hidden_dims, activation_func)
+    return actor, critic
+
+def make_actor_and_q_tuple(obs_dim: int,
+                           act_dim: int,
+                           Q_amount: int,
+                           hidden_layers_count: int = 2,
+                           hidden_dims: int = 256,
+                           activation_func: Optional[nn.ActivationFunction]=None,
+                           standalone_std: bool = True,
+                           key: Optional[jnp.ndarray] = None)->tuple[ActorNN, tuple[QNN]]:
+    
+    """Construct and return q and actor tuple.
+    
+    
+    Returns:
+        Tuple[ActorNN, list[]]: Newly constructed objects matching the requested
+                                configuration in the form of (actor, (Q1,Q2,...))
+    """
+    actor = ActorNN.build_actor(obs_dim, act_dim, hidden_layers_count, hidden_dims, activation_func, standalone_std)
+    if key is not None:
+        key, key_ = jax.random.split(key)
+        actor.init_radom_params(key=key_)
+    
+    Qs:list[QNN] = []
+    for i in range(Q_amount):
+        Qs.append(QNN.build_Q(obs_dim, act_dim, hidden_layers_count, hidden_dims, activation_func))
+        #TODO use a key
+        if key is not None:
+            key, key_ = jax.random.split(key)
+            Qs[i].init_radom_params(key=key_)
+    
+    return actor, tuple(Qs)
