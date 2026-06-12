@@ -84,6 +84,22 @@ register_pytree_node(ActorNN, ActorNN._tree_flatten, ActorNN._tree_unflatten)
 
 
 
+class CriticNN(nn.Sequential):
 
+    def __last_output_compatibility_check(self):
+        """Verifies that the network configuration results in exactly one output feature."""
+        if self.get_output_count(self._modules) > 1:
+            raise nn.InitializationException("A Critic nn can only have one output")
+        elif self.get_output_count(self._modules) == 1:
+            return
+        else:
+            raise nn.InitializationException("A Critic nn must have at least one output")
+    @classmethod
+    def new(cls, *modules:nn.JaxModule):
+        obj = cls(*modules)
+        obj.__last_output_compatibility_check()
+        return obj
+
+register_pytree_node(CriticNN, CriticNN._tree_flatten, CriticNN._tree_unflatten)
 
 
